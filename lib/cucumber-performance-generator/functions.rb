@@ -60,6 +60,67 @@ def recursive_list_variable(variable, prev = '')
 end
 
 
+
+
+#####
+## Function: recursive_escape_hasharray
+## Inputs: variable (any Hash/Array/nil) prev (string of current path)
+## Outputs: Flat hash (key = path, value = value)
+## Description: This function creates a flat hash of the object so it can be
+##              easily used to paramterise the performance script.
+##              This is a recursive function.
+#####
+def recursive_escape_hasharray(variable, char='"')
+
+  # create the hash
+
+  data = variable
+
+  ## If the variable is an array we need to use .each_with_index.
+  if (variable.kind_of?(Array)) then
+
+    # Loop through the items of the array
+    variable.each_with_index do |value, key|
+
+      # If the child is either an Array or Hash then it needs to be put
+      # back into this function.
+      if ((variable[key].kind_of?(Array)) || (variable[key].kind_of?(Hash))) then
+        data[key] = recursive_escape_hasharray(variable[key])
+      elsif (variable[key].kind_of?(String))
+        data[key] = value.gsub(/#{char}/, '\\' + char)
+      else
+        data[key] = value
+      end
+    end
+
+  # The same code as above, but instead needs to use .each
+  elsif (variable.kind_of?(Hash)) then
+
+    # Loop through the items of the array
+    variable.each do |key, value|
+
+      # If the child is either an Array or Hash then it needs to be put
+      # back into this function.
+      if ((variable[key].kind_of?(Array)) || (variable[key].kind_of?(Hash))) then
+        data[key] = recursive_escape_hasharray(variable[key])
+      elsif (variable[key].kind_of?(String))
+        data[key] = value.gsub(/#{char}/, '\\' + char)
+      else
+        data[key] = value
+      end
+
+    end
+    # If it is nil, then we need to return a hash still, this will be reworked in the future
+  end
+
+  # Return data hash
+  return data
+end
+
+
+
+
+
 #####
 ## Function: generate_performance_test_script
 ## Inputs: scenario object (this contains data about the scenario. i.e. name)
@@ -99,10 +160,12 @@ def generate_performance_test_script(scenario)
       end
 
 
+
+
       # Lets create the basic structure of the file
       file_structure = %{
 
-  # Scenario Name: #{scenario.name}
+# Scenario Name: #{scenario.name}
 
     class #{scenario_name}
 
@@ -121,20 +184,14 @@ def generate_performance_test_script(scenario)
           @curl.follow_location = true
           @curl.enable_cookies = true
 
-#v_action end
-      end
 
-      def v_end()
-
-          #v_end end
-      end
-
-    end
 
       }
 
+      write_line_to_performance_test_file(perf_file_name, file_structure, true)
+
       # Lets write that to a file
-      File.open(perf_file_name, 'w') { |file| file.write(file_structure) }
+      #File.open(perf_file_name, 'w') { |file| file.write(file_structure) }
 
     end
 
@@ -169,7 +226,10 @@ def generate_performance_test_script(scenario)
                   # the variable $function_call_data contains the data that is returned
                   # from each function. However this data is nested in a hash.
                   # We need to get a flat structure.
-                  value_list = recursive_list_variable($function_call_data[i2])
+
+                  temp_function_call_data = recursive_escape_hasharray($function_call_data[i2])
+
+                  value_list = recursive_list_variable(temp_function_call_data)
                     # Loop through the flat structure results to do a replace
                     # on the value with a variable
                     value_list.each do |data_key, data_value|
@@ -198,7 +258,9 @@ def generate_performance_test_script(scenario)
                   # the variable $function_call_data contains the data that is returned
                   # from each function. However this data is nested in a hash.
                   # We need to get a flat structure.
-                  value_list = recursive_list_variable($function_call_data[i2])
+
+                  temp_function_call_data = recursive_escape_hasharray($function_call_data[i2])
+                  value_list = recursive_list_variable(temp_function_call_data)
                   # Loop through the flat structure results to do a replace
                   # on the value with a variable
                   value_list.each do |data_key, data_value|
@@ -212,8 +274,10 @@ def generate_performance_test_script(scenario)
                       func_value = func_value.gsub(/\=\>"#{data_value.to_s.gsub('(', '\(').gsub(')', '\)')}\}"/is, '=>"#{' + "genData#{i2}" + data_key + '}"}')
                       func_value = func_value.gsub(/\["#{data_value.to_s.gsub('(', '\(').gsub(')', '\)')}"\]/is, '["#{' + "genData#{i2}" + data_key + '}"]')
 
+                      func_value = func_value.gsub(/ #{data_value.to_s.gsub('(', '\(').gsub(')', '\)')},/is, " genData#{i2}" + data_key + ',')
+                      func_value = func_value.gsub(/ #{data_value.to_s.gsub('(', '\(').gsub(')', '\)')}\)/is, " genData#{i2}" + data_key + ')')
+                      func_value = func_value.gsub(/ #{data_value.to_s.gsub('(', '\(').gsub(')', '\)')}\]/is, " genData#{i2}" + data_key + ']')
 
-                      func_value = func_value.gsub(/ #{data_value.to_s.gsub('(', '\(').gsub(')', '\)')}/is, " genData#{i2}" + data_key)
                       func_value = func_value.gsub(/#{data_value.to_s.gsub('(', '\(').gsub(')', '\)')},/is, "genData#{i2}" + data_key + ',')
                       func_value = func_value.gsub(/\=\>#{data_value.to_s.gsub('(', '\(').gsub(')', '\)')}\}/is, '=>' + "genData#{i2}" + data_key + '}')
                       func_value = func_value.gsub(/\[#{data_value.to_s.gsub('(', '\(').gsub(')', '\)')}\]/is, '[' + "genData#{i2}" + data_key + ']')
@@ -247,11 +311,11 @@ def generate_performance_test_script(scenario)
 
     end
 
-
+    $transaction_count += 1
     # We are going to put transactions in based on the step being executed
     v_action_text = %{
 
-        trans_time = start_traction("#{step_name}")
+        trans_time#{$transaction_count} = start_traction("#{step_name}")
     }
 
     write_line_to_performance_test_file(perf_file_name, v_action_text, true)
@@ -407,6 +471,7 @@ def generate_performance_test_script(scenario)
                     response = http_get(@curl, data, "#{request_url}")
               }
 
+
             end
 
             # write the http (get or post) call
@@ -436,7 +501,7 @@ def generate_performance_test_script(scenario)
 
     # End the transaction
     v_action_text = %{
-        end_traction("#{step_name}", trans_time)
+        end_traction("#{step_name}", trans_time#{$transaction_count})
     }
 
     write_line_to_performance_test_file(perf_file_name, v_action_text, true)
@@ -491,6 +556,8 @@ def decode_value(variable_item)
 end
 
 
+
+
 #####
 ## Function: write_line_to_performance_test_file
 ## Inputs: perf_file_name (String) v_action_text (String)
@@ -499,17 +566,15 @@ end
 #####
 def write_line_to_performance_test_file(perf_file_name, v_action_text, doublespace = false)
 
-  # Open the file to read
-  file_text = File.read(File.expand_path(perf_file_name).to_s)
-  # get the text of the file and add the new code to the end of #v_action end
-  if doublespace == true then
-    file_text_mod = file_text.gsub('#v_action end', '             ' + v_action_text.strip + "\n\n" + '#v_action temp end')
-  else
-    file_text_mod = file_text.gsub('#v_action end', '             ' + v_action_text.strip + "\n" + '#v_action temp end')
-  end
-  # Add the v#_action_end text back it. Doing this with the temp stops a recursive command
-  file_text_mod = file_text_mod.gsub('#v_action temp end', '#v_action end')
-  # Write it back to the file
-  open(perf_file_name, 'w') { |file| file.puts(File.expand_path(file_text_mod).to_s) }
+  $performance_file_lines = $performance_file_lines + '             ' + v_action_text.strip + "\n"
 
+  if (doublespace == true) then
+    $performance_file_lines = $performance_file_lines + "\n"
+
+  end
+
+end
+
+def write_performance_file(perf_file_name)
+  open(File.expand_path(perf_file_name).to_s, 'w') { |file| file.puts($performance_file_lines) }
 end

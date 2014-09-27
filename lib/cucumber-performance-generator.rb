@@ -7,9 +7,12 @@ require_relative 'cucumber-performance-generator/poltergeist_override.rb'
 
 
 
+if (!ENV['GENERATE_PERFORMANCE_SCRIPT'].nil?) then
 
-options = {}
+  options = {}
 
-PHANTOMJS_VERSION = ['1.9.7']
-PHANTOMJS_NAME    = 'phantomjs'
-puts Cliver::detect!((options[:path] || PHANTOMJS_NAME), *PHANTOMJS_VERSION)
+  PHANTOMJS_VERSION = ['1.9.7']
+  PHANTOMJS_NAME    = 'phantomjs'
+  puts Cliver::detect!((options[:path] || PHANTOMJS_NAME), *PHANTOMJS_VERSION)
+
+end
