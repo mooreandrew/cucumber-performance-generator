@@ -1,7 +1,7 @@
 
 Before do | scenario |
 
-  if (!ENV['GENERATE_PERFORMANCE_SCRIPT'].nil?) then
+  #if (!ENV['GENERATE_PERFORMANCE_SCRIPT'].nil?) then
 
     $step = 0
 
@@ -17,7 +17,7 @@ Before do | scenario |
     $transaction_count = 0
 
     page.driver.clear_network_traffic
-  end
+#  end
 
 end
 
