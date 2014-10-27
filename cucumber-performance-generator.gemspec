@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name        = 'cucumber-performance-generator'
-  s.version     = '0.0.4'
-  s.date        = '2014-09-29'
+  s.version     = '0.0.5'
+  s.date        = '2014-10-20'
   s.summary     = ""
   s.description = "This gem adds to convert a capybara/poltergeist script into a load script usable by the cucumber-performance gem."
   s.authors     = ["Andrew Moore"]

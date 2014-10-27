@@ -480,22 +480,27 @@ def generate_performance_test_script(scenario)
           end
 
           # The scripts will run with auto redirect, so we only want to check the final step, not all of them.
-          if (request.response_parts[request.response_parts.count - 1].redirect_url.to_s == '') then
+          if (!request.response_parts[request.response_parts.count - 1].nil?) then
+            if (request.response_parts[request.response_parts.count - 1].redirect_url.to_s == '') then
 
-            # Lets assert to see if the response from the http call matches that we should expect
-            v_action_text = %{
-            assert_http_status(response, #{request.response_parts[request.response_parts.count -1].status})
-            }
+              # Lets assert to see if the response from the http call matches that we should expect
+              v_action_text = %{
+              assert_http_status(response, #{request.response_parts[request.response_parts.count -1].status})
+              }
 
-            write_line_to_performance_test_file(perf_file_name, v_action_text, true)
+              write_line_to_performance_test_file(perf_file_name, v_action_text, true)
 
+            end
           end
 
       end
 
       # Assign the prevredirect variable with the current redirect url.
-      prevredirect = request.response_parts[request.response_parts.count - 1].redirect_url.to_s
-
+      if (!request.response_parts[request.response_parts.count - 1].nil?) then
+        prevredirect = request.response_parts[request.response_parts.count - 1].redirect_url.to_s
+      else
+        prevredirect = '';
+      end
 
     end
 
