@@ -11,7 +11,7 @@ if (!ENV['GENERATE_PERFORMANCE_SCRIPT'].nil?) then
 
   options = {}
 
-  PHANTOMJS_VERSION = ['1.9.7']
+  PHANTOMJS_VERSION = ['1.9.8']
   PHANTOMJS_NAME    = 'phantomjs'
   puts Cliver::detect!((options[:path] || PHANTOMJS_NAME), *PHANTOMJS_VERSION)
 
